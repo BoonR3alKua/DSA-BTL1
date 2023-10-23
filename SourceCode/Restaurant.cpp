@@ -11,6 +11,7 @@ class imp_res : public Restaurant
 		customer* head;
 		customer* tail;
 		customer* waitlineHead;
+		customer* activityLog;
 
 		//Connecting Tail with Head
 		void tailToHead() {
@@ -61,20 +62,22 @@ class imp_res : public Restaurant
 						addCustomerLeft(cus);
 					}
 					cursor = cus;
-					tailToHead;
+					tailToHead();
 					cus_num++;
 				}
 		}
 
 		//Checking for duplicate name in restaurant and waiting line
 		bool nameCheck(string name) {
-			customer* ptr = head;
+			if (head) {
+				customer* ptr = head;
 			do {
 				if (ptr->name == name) return 1;
 				ptr = ptr->next;
 			} while (ptr != head);
-			if (!waitlineHead) {
-				ptr = waitlineHead;
+			}
+			if (waitlineHead) {
+				customer* ptr = waitlineHead;
 				do {
 					if (ptr->name == name) return 1;
 					ptr = ptr->next;
@@ -101,7 +104,8 @@ class imp_res : public Restaurant
 			waitlineHead = waitlineHead->next;
 			waitlineHead->prev = nullptr;
 			wait_num--;
-			delete temp;
+			freeTable(temp);
+			free(temp);
 		}
 		
 		//Filling the restaurant until it reach the maximum capacity or the waiting line clears
@@ -109,29 +113,100 @@ class imp_res : public Restaurant
 			if (!waitlineHead) return;
 			if (cus_num == MAXSIZE) return;
 			customer* cus = waitlineHead;
-			while (cus_num < MAXSIZE || wait_num > 0) {
+			while (cus_num < MAXSIZE && wait_num > 0) {
 				addCustomer(cus);
 				removeWaitingCustomer();
-				cus_num++;
-				wait_num--;
 			}
 			if (wait_num == 0) waitlineHead = nullptr;
+		}
+
+		//Reseting table values
+		void freeTable(customer* cus) {
+			cus->energy = NULL;
+			cus->name = '\0';
+			cus->prev = nullptr;
+			cus->next = nullptr;
+		}
+
+		//Noting customer that successfully has a table to activity log
+		void addToActivityLog(customer* cus) {
+			if (!activityLog) activityLog = cus;
+			else {
+				customer* ptr = activityLog;
+				while (ptr->next != nullptr) ptr = ptr->next;
+				ptr->next = cus;
+				cus->prev = ptr;
+			}
+		}
+
+		//Deleting 1 customer out of activity log
+		void removeActivityLog()  {
+			customer* ptr = activityLog;
+			activityLog = activityLog->next;
+			freeTable(ptr);
+			free(ptr);
+		}
+
+		//Remove a number of customer out of the restaurant
+		void removeNumFromRestaurant(int num) {
+			int i = 0;
+			customer* ptr = head;
+			while (i < num) {
+				while (ptr->name != activityLog->name) ptr = ptr->next;
+				ptr->next->prev = ptr->prev;
+				ptr->prev->next = ptr->next;
+				if (ptr == head) {
+					head = ptr->next;
+				} else if (ptr == tail) {
+					tail = ptr->prev;
+				}
+				if (ptr->energy > 0) cursor = ptr->next;
+				else cursor = ptr->prev;
+				tailToHead();
+				freeTable(ptr);
+				free(ptr);
+				removeActivityLog();
+				cus_num;
+				i++;
+			}
+		}
+
+		//Remove all customer out of the restaurant
+		void removeAllFromRestaurant() {
+			while (head != tail) {
+				customer* ptr1 = head;
+				customer* ptr2 = activityLog;
+				head = head->next;
+				tailToHead();
+				freeTable(ptr1);
+				free(ptr1);
+				activityLog = activityLog->next;
+				freeTable(ptr2);
+				free(ptr2);
+			}
+			freeTable(head);
+			freeTable(activityLog);
+			head = nullptr;
+			tail = nullptr;
+			cursor = nullptr;
+			activityLog = nullptr;
+			cus_num = 0;
+			empty_res = true;
 		}
 		
 		void RED(string name, int energy)
 		{
-			if (energy == 0 || wait_num > MAXSIZE) return;
 			cout << name << " " << energy << endl;
+			if (energy == 0 || wait_num > MAXSIZE) return;
 			customer *cus = new customer (name, energy, nullptr, nullptr);
-			fillRestaurant();
 			if (nameCheck(name)) return;
 			if (cus_num == MAXSIZE) {
 				addWaitingCustomer(cus);
 			}
 			else if (cus_num >= (MAXSIZE / 2)) {
-				int res;
+				int res = 0;
 				customer* ptr = head;
-				customer* hold;
+				customer* hold = ptr;
 				do {
 					if (abs(cus->energy - ptr->energy) > abs(res)) {
 						res = cus->energy - ptr->energy;
@@ -142,8 +217,11 @@ class imp_res : public Restaurant
 				cursor = hold;
 				if (res > 0) addCustomerLeft(cus);
 				else addCustomerRight(cus);
+				cursor = cus;
+				addToActivityLog(cus);
 			} else {
 				addCustomer(cus);
+				addToActivityLog(cus);
 			}
 
 		}
@@ -151,7 +229,16 @@ class imp_res : public Restaurant
 		void BLUE(int num)
 		{
 			cout << "blue "<< num << endl;
+			if (num <= 0) return;
+			if (cus_num <= 0) return;
+			if (num < cus_num) {
+				removeNumFromRestaurant(num);
+			} else {
+				removeAllFromRestaurant();
+			}
+			fillRestaurant();
 		}
+
 		void PURPLE()
 		{
 			cout << "purple"<< endl;
