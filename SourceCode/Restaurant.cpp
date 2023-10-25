@@ -122,7 +122,7 @@ class imp_res : public Restaurant
 
 		//Reseting table values
 		void freeTable(customer* cus) {
-			cus->energy = NULL;
+			cus->energy = 0;
 			cus->name = '\0';
 			cus->prev = nullptr;
 			cus->next = nullptr;
@@ -139,10 +139,46 @@ class imp_res : public Restaurant
 			}
 		}
 
-		//Deleting 1 customer out of activity log
+		//Deleting 1 customer out of activity log in FIFO order
 		void removeActivityLog()  {
 			customer* ptr = activityLog;
 			activityLog = activityLog->next;
+			freeTable(ptr);
+			free(ptr);
+		}
+
+		//Deleting 1 customer out of activity log by choice
+		void removeOneActivityLog(customer* cus)  {
+			customer* ptr = activityLog;
+			while (ptr->name != cus->name) ptr = ptr->next;
+			
+			if (ptr == activityLog) {
+				activityLog = ptr->next;
+				freeTable(ptr);
+				free(ptr);
+			} else if (ptr->next == nullptr) {
+				ptr->prev->next = nullptr;
+				freeTable(ptr);
+				free(ptr);
+			} else {
+				ptr->next->prev = ptr->prev;
+				ptr->prev->next = ptr->next;
+				freeTable(ptr);
+				free(ptr);
+			}
+		}
+
+		//Remove one customer from the waiting line by choice
+		void removeOneTable(customer* ptr) {
+			ptr->next->prev = ptr->prev;
+			ptr->prev->next = ptr->next;
+			if (ptr == head) {
+				head = ptr->next;
+			} else if (ptr == tail) {
+				tail = ptr->prev;
+			}
+			if (ptr->energy > 0) cursor = ptr->next;
+			else cursor = ptr->prev;
 			freeTable(ptr);
 			free(ptr);
 		}
@@ -153,18 +189,10 @@ class imp_res : public Restaurant
 			customer* ptr = head;
 			while (i < num) {
 				while (ptr->name != activityLog->name) ptr = ptr->next;
-				ptr->next->prev = ptr->prev;
-				ptr->prev->next = ptr->next;
-				if (ptr == head) {
-					head = ptr->next;
-				} else if (ptr == tail) {
-					tail = ptr->prev;
-				}
-				if (ptr->energy > 0) cursor = ptr->next;
-				else cursor = ptr->prev;
+				if (ptr->energy < 0) cursor = ptr->prev;
+				else cursor = ptr->next;
+				removeOneTable(ptr);
 				tailToHead();
-				freeTable(ptr);
-				free(ptr);
 				removeActivityLog();
 				cus_num;
 				i++;
@@ -194,6 +222,11 @@ class imp_res : public Restaurant
 			empty_res = true;
 		}
 		
+		//Print out customer info
+		void print(customer* cus) {
+			cout << cus->name << "-" << cus->energy << endl;
+		}
+
 		void RED(string name, int energy)
 		{
 			cout << name << " " << energy << endl;
@@ -251,12 +284,100 @@ class imp_res : public Restaurant
 		{
 			cout << "unlimited_void" << endl;
 		}
+		
 		void DOMAIN_EXPANSION()
 		{
 			cout << "domain_expansion" << endl;
+			if (!head) return;
+			customer* ptr = head;
+			int sum = 0;
+			while (ptr->next != head) {
+				sum += ptr->energy;
+				ptr = ptr->next;
+			}
+			ptr = waitlineHead;
+			while (ptr->next != nullptr) {
+				sum += ptr->energy;
+				ptr = ptr->next;
+			}
+			if (sum < 0) {
+				ptr = head;
+				customer* temp;
+				while (ptr->next != head) {
+					temp = ptr->next;
+					if (ptr->energy < 0){
+						removeOneTable(ptr);
+						removeOneActivityLog(ptr);
+						tailToHead();
+						print(ptr);
+					}
+					ptr = temp;
+				}
+				cursor = temp->next;
+				ptr = waitlineHead;
+				while (ptr->next != nullptr) {
+					temp = ptr->next;
+					if (ptr->energy < 0) {
+						removeOneTable(ptr);
+						removeOneActivityLog(ptr);
+						tailToHead();
+						print(ptr);
+					}
+					ptr = temp;
+				}
+			} else {
+				ptr = head;
+				customer* temp;
+				while (ptr->next != head) {
+					temp = ptr->next;
+					if (ptr->energy > -1){
+						removeOneTable(ptr);
+						removeOneActivityLog(ptr);
+						tailToHead();
+						print(ptr);
+					}
+					ptr = temp;
+				}
+				cursor = temp->prev;
+				ptr = waitlineHead;
+				while (ptr->next != nullptr) {
+					temp = ptr->next;
+					if (ptr->energy > -1) {
+						removeOneTable(ptr);
+						removeOneActivityLog(ptr);
+						tailToHead();
+						print(ptr);
+					}
+					ptr = temp;
+				}
+			}
 		}
+
 		void LIGHT(int num)
 		{
 			cout << "light " << num << endl;
+			if (num > 0) {
+				customer* ptr = cursor;
+				do
+				{
+					print(ptr);
+					ptr = ptr->next;
+				} while (ptr != cursor);
+				
+			} else if(num < 0) {
+				customer* ptr = cursor;
+				do
+				{
+					print(ptr);
+					ptr = ptr->prev;
+				} while (ptr != cursor);
+			} else {
+				customer* ptr = waitlineHead;
+				do
+				{
+					print(ptr);
+					ptr = ptr->next;
+				} while (ptr->next != nullptr);
+			}
 		}
 };
