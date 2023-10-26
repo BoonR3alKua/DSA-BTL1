@@ -2,14 +2,19 @@
 
 class imp_res : public Restaurant
 {
-	
 	public:	
-		imp_res() {};
-		bool empty_res = 1;
-		int cus_num = 0, wait_num = 0;
-		customer* cursor;
+		imp_res() {
+			head = nullptr;
+			tail = nullptr;
+			cus_num = 0;
+		};
 		customer* head;
 		customer* tail;
+		int cus_num;
+		customer* cursor;
+		bool empty_res = 1;
+		int wait_num = 0;
+
 		customer* waitlineHead;
 		customer* activityLog;
 
@@ -221,6 +226,31 @@ class imp_res : public Restaurant
 			cus_num = 0;
 			empty_res = true;
 		}
+
+		void swap(customer* cus1, customer* cus2) {
+			// int temp_energy;
+			// string temp_name;
+			// temp_energy = cus1->energy;
+			// temp_name = cus1->name;
+			// cus1->energy = cus2->energy;
+			// cus1->name = cus2->name;
+			// cus2->energy = temp_energy;
+			// cus2->name = temp_name;
+
+			customer* temp_prev = cus2->prev;
+			customer* temp_next = cus2->next;
+			customer* temp = cus1;
+
+			cus2->prev = cus1->prev;
+			cus2->next = cus1->prev;
+			cus1->next->prev = cus2;
+			cus1->prev->next = cus2;
+
+			cus1->prev = temp_prev;
+			cus1->next = temp_next;
+			temp_prev->next = cus1;
+			temp_next->prev = cus1;
+		}
 		
 		//Print out customer info
 		void print(customer* cus) {
@@ -233,7 +263,7 @@ class imp_res : public Restaurant
 			if (energy == 0 || wait_num > MAXSIZE) return;
 			customer *cus = new customer (name, energy, nullptr, nullptr);
 			if (nameCheck(name)) return;
-			if (cus_num == MAXSIZE) {
+			if (wait_num == MAXSIZE) {
 				addWaitingCustomer(cus);
 			}
 			else if (cus_num >= (MAXSIZE / 2)) {
@@ -275,14 +305,122 @@ class imp_res : public Restaurant
 		void PURPLE()
 		{
 			cout << "purple"<< endl;
+			customer* ptr = waitlineHead;
+			customer* temp;
+			int max = 0;
+			while (ptr->next != nullptr) {
+				if (max >= abs(ptr->energy)) {
+					temp = ptr;
+					max = ptr->energy;
+				}
+				ptr = ptr->next;
+			}
 		}
 		void REVERSAL()
 		{
 			cout << "reversal" << endl;
+			if (empty_res) return;
+			if (cus_num == 1) {
+				print(head);
+				return;
+			}
+			customer* ptr1 = cursor;
+			customer* ptr2 = cursor->prev;
+			bool foundEachother = 0;	
+
+			while (ptr1 != ptr2) {
+				while (ptr1 < 0) {
+					ptr1 = ptr1->next;
+					if (ptr1 == ptr2) {
+						foundEachother = 1;
+						break;
+					}
+				}
+				while (ptr2 < 0) {
+					ptr2 = ptr2->next;
+					if (ptr1 == ptr2) {
+						foundEachother = 1;
+						break;
+					}
+				}
+				if (foundEachother) break;
+				else swap(ptr1, ptr2);
+				ptr1 = ptr1->next;
+				if (ptr1 == ptr2) break;
+				ptr2 = ptr2->next;
+			}
+
+			while (ptr1 != ptr2) {
+				while (ptr1 > 0) {
+					ptr1 = ptr1->next;
+					if (ptr1 == ptr2) {
+						foundEachother = 1;
+						break;
+					}
+				}
+				while (ptr2 > 0) {
+					ptr2 = ptr2->next;
+					if (ptr1 == ptr2) {
+						foundEachother = 1;
+						break;
+					}
+				}
+				if (foundEachother) break;
+				else swap(ptr1, ptr2);
+				ptr1 = ptr1->next;
+				if (ptr1 == ptr2) break;
+				ptr2 = ptr2->next;
+			}
 		}
 		void UNLIMITED_VOID()
 		{
 			cout << "unlimited_void" << endl;
+			if (cus_num < 4) return;
+			customer* ptr1 = cursor;
+			customer* ptr2 = cursor->next;
+			customer* min_ptr;
+			int final_min = 0, count = 1, final_count;
+			do
+			{
+				int min = ptr1->energy;
+				for (int i = 0; i < 3; i++) {
+					min += ptr2->energy;
+					count++;
+					ptr2 = ptr2->next;
+				}
+				while (ptr2->energy < 0) {
+					min += ptr2->energy;
+					count++;
+					ptr2 = ptr2->next;
+				}
+				if (min <= final_min) {
+					min_ptr = ptr1;
+					final_min = min;
+					final_count = count;
+				}
+				count = 1;
+				ptr1 = ptr1->next;
+			} while (ptr1 != cursor);
+			count = 0;
+			ptr1 = min_ptr;
+			int min = min_ptr->energy;
+			int count_ptr;
+			for (count; count < final_count; count++) {
+				if (min < ptr1->energy) {
+					count_ptr = count;
+					ptr2 = ptr1;
+				}
+				ptr1 = ptr1->next;
+			}
+			for (count = count_ptr; count <= final_count; count++) {
+				print(ptr2);
+				ptr2 = ptr2->next;
+			}
+			ptr2 = min_ptr;
+			for (count = 0; count < count_ptr; count++) {
+				print(ptr2);
+				ptr2 = ptr2->next;
+			}
 		}
 		
 		void DOMAIN_EXPANSION()
