@@ -305,6 +305,7 @@ class imp_res : public Restaurant
 		void PURPLE()
 		{
 			cout << "purple"<< endl;
+			if (wait_num < 2) return;
 			customer* ptr = waitlineHead;
 			customer* temp;
 			int max = 0;
@@ -315,6 +316,9 @@ class imp_res : public Restaurant
 				}
 				ptr = ptr->next;
 			}
+			int n = 0;
+
+			BLUE(n % MAXSIZE);
 		}
 		void REVERSAL()
 		{
@@ -329,14 +333,14 @@ class imp_res : public Restaurant
 			bool foundEachother = 0;	
 
 			while (ptr1 != ptr2) {
-				while (ptr1 < 0) {
+				while (ptr1->energy < 0) {
 					ptr1 = ptr1->next;
 					if (ptr1 == ptr2) {
 						foundEachother = 1;
 						break;
 					}
 				}
-				while (ptr2 < 0) {
+				while (ptr2->energy < 0) {
 					ptr2 = ptr2->next;
 					if (ptr1 == ptr2) {
 						foundEachother = 1;
@@ -351,14 +355,14 @@ class imp_res : public Restaurant
 			}
 
 			while (ptr1 != ptr2) {
-				while (ptr1 > 0) {
+				while (ptr1->energy > 0) {
 					ptr1 = ptr1->next;
 					if (ptr1 == ptr2) {
 						foundEachother = 1;
 						break;
 					}
 				}
-				while (ptr2 > 0) {
+				while (ptr2->energy > 0) {
 					ptr2 = ptr2->next;
 					if (ptr1 == ptr2) {
 						foundEachother = 1;
